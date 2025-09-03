@@ -35,8 +35,7 @@ public class Client {
         Scanner scanner = new Scanner(System.in);
         while (scanner.hasNextLine()) {
             String line = scanner.nextLine();
-            String msg = "[" + name + "]: " + line;
-            channel.write(ByteBuffer.wrap(msg.getBytes()));
+            channel.write(ByteBuffer.wrap(line.getBytes()));
         }
     }
 
