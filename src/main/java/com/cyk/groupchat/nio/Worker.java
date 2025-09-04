@@ -69,18 +69,25 @@ public class Worker implements Runnable{
             int read = channel.read(buffer);
             if (read > 0) {
                 buffer.flip();
-                String message = new String(buffer.array(), 0, buffer.remaining());
+                final String message = new String(buffer.array(), 0, buffer.remaining());
                 System.out.println(name + " received message: " + message);
-                if (message.startsWith("/join ")) {
-                    String room = message.substring(6).trim();
-                    ClientManager.joinRoom(room, channel);
-                } else if (message.startsWith("/quit ")) {
-                    String room = message.substring(6).trim();
-                    ClientManager.quitRoom(room, channel);
-                } else {
-                    message = "[" + channel.getRemoteAddress().toString().substring(1) + "] :" + message;
-                    ClientManager.broadcast(channel, message);
-                }
+                // 业务线程池隔离
+                ExecutorGroup.processBusiness(() -> {
+                    try {
+                        if (message.startsWith("/join ")) {
+                            String room = message.substring(6).trim();
+                            ClientManager.joinRoom(room, channel);
+                        } else if (message.startsWith("/quit ")) {
+                            String room = message.substring(6).trim();
+                            ClientManager.quitRoom(room, channel);
+                        } else {
+                            String broadcastMsg = "[" + channel.getRemoteAddress().toString().substring(1) + "] :" + message;
+                            ClientManager.broadcast(channel, broadcastMsg);
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                });
             } else if (read == -1) {
                 // 客户端关闭连接
                 ClientManager.removeClient(channel);
